@@ -175,32 +175,25 @@
     // 🔗 発行したGASのWebアプリURLを入力してください
     const GAS_URL = "https://script.google.com/macros/s/AKfycbypJR_DL9HnJMP2Lf1rZWFfzWASiOrH9nmD10GI0tU5LZFBlB6nleDzfrtsstJExaD7gw/exec";
 
-    // 🏷️ ここで24店舗の名前を設定します（index 0が店舗1に対応）
+    // 🏷️ ここで店舗の名前を設定します（index 0が店舗1に対応）
     const BOOTH_NAMES = [
-      "1. 国語１年",
-      "2. 社会科１年",
-      "3. 心理１年",
-      "4. 音楽１年",
-      "5. 理科１年",
-      "6. 特別支援１年",
-      "7. [kapela]",
-      "8. 技術４年",
-      "9. 算数・数学４年",
-      "10. さ☆ぶら",
-      "11. 生活創造３年",
-      "12. MOVE",
-      "13. 生活創造１年",
-      "14. 生活創造２年",
-      "15. 養護教育１年",
-      "16. 算数・数学１年",
-      "17. 剣道部",
-      "18. よさこい",
-      "19. 教育１年",
-      "20. 卓球部",
-      "21. 英語１年",
-      "22. 硬式野球部",
-      "23. 保健体育１年",
-      "24. 軟式野球部"
+      "1. JAZZ研",
+      "2. 図画美１年",
+      "3. ポケモン",
+      "4. 日高",
+      "5. カラカネ",
+      "6. 文芸部",
+      "7. 写真部",
+      "8. 漫研",
+      "9. 茶道部",
+      "10. 生協",
+      "11. [kapela]",
+      "12. 混声",
+      "13. SUN",
+      "14. 空の魚",
+      "15. FOLK-IN",
+      "16. ME",
+      "17. セツル"
     ];
 
     let lastStatuses = {};
@@ -247,8 +240,8 @@
       const container = document.getElementById('boothContainer');
       container.innerHTML = '';
 
-      // 1〜24店舗のカードを生成
-      for (let i = 1; i <= 24; i++) {
+      // 1〜17店舗のカードを生成
+      for (let i = 1; i <= 17; i++) {
         const boothName = BOOTH_NAMES[i - 1] || `店舗 ${i}`; // 名前が未定義の場合はフォールバック
         const card = document.createElement('div');
         card.className = 'card';
@@ -299,8 +292,8 @@
         const data = await res.json();
         let soundRequired = false;
 
-        // 24店舗分を同期
-        for (let i = 1; i <= 24; i++) {
+        // 17店舗分を同期
+        for (let i = 1; i <= 17; i++) {
           const key = String(i);
           const serverStatus = data[key] || 'waiting';
 
@@ -418,7 +411,7 @@
       resetBtn.textContent = "⏳ リセット中...";
 
       // すべてのカードをローディング表示に変更
-      for (let i = 1; i <= 24; i++) {
+      for (let i = 1; i <= 17; i++) {
         setCardLoading(i, true, "⏳ リセット中...");
       }
 
@@ -430,7 +423,7 @@
         const data = await res.json();
 
         if (data.result === 'success') {
-          for (let i = 1; i <= 24; i++) {
+          for (let i = 1; i <= 17; i++) {
             lastStatuses[String(i)] = 'waiting';
             processingBooths[i] = false;
             renderCard(i, 'waiting');
@@ -441,7 +434,7 @@
         }
       } catch (e) {
         alert('全リセット処理中にエラーが発生しました。再度お試しください。');
-        for (let i = 1; i <= 24; i++) {
+        for (let i = 1; i <= 17; i++) {
           processingBooths[i] = false;
         }
         syncStatuses();
