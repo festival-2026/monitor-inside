@@ -412,7 +412,7 @@
       resetBtn.textContent = "⏳ リセット中...";
 
       // すべてのカードをローディング表示に変更
-      for (let i = 1; i <= 17; i++) {
+      for (let i = 1; i <= 18; i++) {
         setCardLoading(i, true, "⏳ リセット中...");
       }
 
@@ -424,7 +424,7 @@
         const data = await res.json();
 
         if (data.result === 'success') {
-          for (let i = 1; i <= 17; i++) {
+          for (let i = 1; i <= 18; i++) {
             lastStatuses[String(i)] = 'waiting';
             processingBooths[i] = false;
             renderCard(i, 'waiting');
