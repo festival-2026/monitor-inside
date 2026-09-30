@@ -294,8 +294,8 @@
       isSyncing = true;
 
       try {
-        // 💡 タイムアウトを8秒に設定してGASの応答を待つ
-        const res = await fetchWithTimeout(`${GAS_URL}?_t=${Date.now()}`, 8000);
+        // 💡 タイムアウトを4秒に設定してGASの応答を待つ
+        const res = await fetchWithTimeout(`${GAS_URL}?_t=${Date.now()}`, 4000);
         const data = await res.json();
         let soundRequired = false;
 
