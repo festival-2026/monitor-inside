@@ -162,7 +162,7 @@
 <body>
 
   <header>
-    <h1>🚨 2026年第77回藍涼祭 屋内出店点検管理システム</h1>
+    <h1>🚨 2026年第77回藍涼祭 屋外出店点検管理システム</h1>
     <div class="header-left">
       <button class="btn-reset-all" id="btnResetAll" onclick="handleResetAllClick()">🔄 全店舗リセット</button>
       <div class="sync-status" id="syncTime">リアルタイム同期中...</div>
@@ -241,7 +241,6 @@
       const container = document.getElementById('boothContainer');
       container.innerHTML = '';
 
-      // BOOTH_NAMESの要素数（18店舗）分カードを生成
       for (let i = 1; i <= BOOTH_NAMES.length; i++) {
         const boothName = BOOTH_NAMES[i - 1] || `店舗 ${i}`;
         const card = document.createElement('div');
@@ -260,6 +259,7 @@
     }
 
     function renderCard(booth, status) {
+      // 処理中の店舗は描画更新をスキップ
       if (processingBooths[booth]) return;
 
       const card = document.getElementById(`card-${booth}`);
@@ -293,11 +293,11 @@
         const data = await res.json();
         let soundRequired = false;
 
-        // 18店舗分を同期
         for (let i = 1; i <= BOOTH_NAMES.length; i++) {
           const key = String(i);
           const serverStatus = data[key] || 'waiting';
 
+          // 処理中の店舗はサーバーの古い状態で上書きしない
           if (processingBooths[i]) continue;
 
           if (serverStatus === 'requested' && lastStatuses[key] !== 'requested') {
@@ -346,28 +346,26 @@
         nextStatus = 'waiting';
       }
 
+      // 処理中フラグを立てて自動同期からの上書きを防止
       setCardLoading(booth, true, "⏳ 認証確認中...");
 
       try {
-        const fetchPromise = fetchWithTimeout(`${GAS_URL}?action=update&booth=${booth}&status=${nextStatus}&_t=${Date.now()}`, 6000);
-        const timerPromise = sleep(1500);
-
-        const [res] = await Promise.all([fetchPromise, timerPromise]);
+        const res = await fetchWithTimeout(`${GAS_URL}?action=update&booth=${booth}&status=${nextStatus}&_t=${Date.now()}`, 6000);
         const data = await res.json();
 
         if (data.result === 'success') {
+          // GASへの書き込み成功後、ローカルステータスを即時更新
           lastStatuses[key] = nextStatus;
-          processingBooths[booth] = false;
           renderCard(booth, nextStatus);
-        } else if (data.result === 'error') {
-          alert(data.message || '運営の確認が間違っています。担当者に確認してください');
-          processingBooths[booth] = false;
-          renderCard(booth, currentStatus);
         } else {
-          throw new Error('Server error');
+          alert(data.message || '更新処理に失敗しました。');
+          renderCard(booth, currentStatus);
         }
       } catch (e) {
-        alert('通信エラーまたはサーバー応答に時間がかかりました。もう一度お試しください。');
+        alert('通信エラーが発生しました。もう一度お試しください。');
+      } finally {
+        // 少し猶予を置いてから同期ロックを解除（GASの反映待ち）
+        await sleep(1000);
         processingBooths[booth] = false;
         syncStatuses();
       }
@@ -382,27 +380,24 @@
       setCardLoading(booth, true, "⏳ 更新中...");
 
       try {
-        const fetchPromise = fetchWithTimeout(`${GAS_URL}?action=cancel&booth=${booth}&_t=${Date.now()}`, 5000);
-        const timerPromise = sleep(1500);
-
-        const [res] = await Promise.all([fetchPromise, timerPromise]);
+        const res = await fetchWithTimeout(`${GAS_URL}?action=cancel&booth=${booth}&_t=${Date.now()}`, 5000);
         const data = await res.json();
 
         if (data.result === 'success') {
           lastStatuses[key] = 'waiting';
-          processingBooths[booth] = false;
           renderCard(booth, 'waiting');
         } else {
-          throw new Error('Server error');
+          alert('取り消し処理に失敗しました。');
         }
       } catch (e) {
         alert('通信エラーが発生しました。もう一度お試しください。');
+      } finally {
+        await sleep(1000);
         processingBooths[booth] = false;
         syncStatuses();
       }
     }
 
-    // 🔄 全店舗リセットの処理
     async function handleResetAllClick() {
       const confirmResult = confirm("【警告】すべての店舗のステータスを『待機中』にリセットしますか？\nこの操作は元に戻せません。");
       if (!confirmResult) return;
@@ -411,37 +406,33 @@
       resetBtn.disabled = true;
       resetBtn.textContent = "⏳ リセット中...";
 
-      // すべてのカードをローディング表示に変更
       for (let i = 1; i <= BOOTH_NAMES.length; i++) {
         setCardLoading(i, true, "⏳ リセット中...");
       }
 
       try {
-        const fetchPromise = fetchWithTimeout(`${GAS_URL}?action=resetAll&_t=${Date.now()}`, 8000);
-        const timerPromise = sleep(1500);
-
-        const [res] = await Promise.all([fetchPromise, timerPromise]);
+        const res = await fetchWithTimeout(`${GAS_URL}?action=resetAll&_t=${Date.now()}`, 8000);
         const data = await res.json();
 
         if (data.result === 'success') {
           for (let i = 1; i <= BOOTH_NAMES.length; i++) {
             lastStatuses[String(i)] = 'waiting';
-            processingBooths[i] = false;
             renderCard(i, 'waiting');
           }
           alert('すべての店舗を待機状態にリセットしました。');
         } else {
-          throw new Error('Server error');
+          alert('全リセット処理に失敗しました。');
         }
       } catch (e) {
         alert('全リセット処理中にエラーが発生しました。再度お試しください。');
+      } finally {
+        await sleep(1000);
         for (let i = 1; i <= BOOTH_NAMES.length; i++) {
           processingBooths[i] = false;
         }
-        syncStatuses();
-      } finally {
         resetBtn.disabled = false;
         resetBtn.textContent = "🔄 全店舗リセット";
+        syncStatuses();
       }
     }
 
@@ -451,7 +442,7 @@
 
     initGrid();
     syncStatuses();
-    setInterval(syncStatuses, 1500);
+    setInterval(syncStatuses, 2000); // 衝突回避のため2秒間隔で同期
   </script>
 </body>
 </html>
